@@ -94,6 +94,10 @@ func main() {
 
 func handleRequests(reqs <-chan *ssh.Request) {
 	for req := range reqs {
+		if req.Type == "keepalive@openssh.com" {
+			req.Reply(true, nil)
+			continue
+		}
 		log.Printf("recieved out-of-band request: %+v", req)
 	}
 }
