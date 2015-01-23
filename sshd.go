@@ -129,11 +129,20 @@ func handleChannels(chans <-chan ssh.NewChannel) {
 		//teardown session
 		var once sync.Once
 		close := func() {
-			channel.Close()
-			_, err := bash.Process.Wait()
-			if err != nil {
+			exit_status := -1
+			status, err := bash.Process.Wait()
+
+			if err == nil {
+				if code, ok := status.Sys().(syscall.WaitStatus); ok {
+					exit_status = code.ExitStatus()
+				}
+			} else {
 				log.Printf("failed to exit bash (%s)", err)
 			}
+
+			channel.SendRequest("exit-status", false, ssh.Marshal(&struct{ uint32 }{uint32(exit_status)}))
+			channel.Close()
+
 			log.Printf("session closed")
 		}
 
